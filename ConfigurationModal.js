@@ -1,82 +1,44 @@
-import React, { useState } from 'react';
-import {
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
-  Button,
-  Paper,
-  Typography,
-  Box
-} from '@mui/material';
+import React from 'react';
+import { styled } from '@mui/material/styles';
+import clsx from 'clsx';
 
-import Step1 from './steps/Step1_DataCollection';
-import Step2 from './steps/Step2_DataExtraction';
-import Step3 from './steps/Step3_CommentaryAnalysis';
-import Step4 from './steps/Step4_ReportingPresentation';
+import SearchIcon from '@mui/icons-material/Search';
+import SettingsIcon from '@mui/icons-material/Settings';
+import ArticleIcon from '@mui/icons-material/Article';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import CheckIcon from '@mui/icons-material/Check';
 
-const steps = [
-  { label: 'Data Collection', content: <Step1 /> },
-  { label: 'Data Extraction', content: <Step2 /> },
-  { label: 'Commentary Analysis', content: <Step3 /> },
-  { label: 'Reporting & Presentation', content: <Step4 /> }
-];
+const icons = {
+  1: <SearchIcon />,
+  2: <SettingsIcon />,
+  3: <ArticleIcon />,
+  4: <AssessmentIcon />,
+};
 
-export default function VerticalStepper() {
-  const [activeStep, setActiveStep] = useState(0);
+const StepIconRoot = styled('div')(({ theme }) => ({
+  backgroundColor: '#e0e0e0',
+  color: theme.palette.common.white,
+  display: 'flex',
+  height: 40,
+  width: 40,
+  borderRadius: '50%',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 24,
+  '&.active': {
+    backgroundColor: theme.palette.primary.main,
+  },
+  '&.completed': {
+    backgroundColor: '#2e7d32',
+  },
+}));
 
-  const handleNext = () => {
-    setActiveStep((prev) => prev + 1);
-  };
-
-  const handleBack = () => {
-    setActiveStep((prev) => prev - 1);
-  };
-
-  const handleReset = () => {
-    setActiveStep(0);
-  };
+export default function CustomStepIcon(props) {
+  const { active, completed, icon, className } = props;
 
   return (
-    <Box sx={{ maxWidth: 600 }}>
-      <Stepper activeStep={activeStep} orientation="vertical">
-        {steps.map((step, index) => (
-          <Step key={step.label}>
-            <StepLabel>
-              <Typography fontWeight={600}>{step.label}</Typography>
-            </StepLabel>
-            <StepContent>
-              <Box sx={{ mb: 2 }}>
-                {step.content}
-                <Box sx={{ mt: 2 }}>
-                  <Button
-                    variant="contained"
-                    onClick={handleNext}
-                    sx={{ mt: 1, mr: 1 }}
-                    disabled={activeStep === steps.length - 1}
-                  >
-                    {index === steps.length - 1 ? 'Finish' : 'Next'}
-                  </Button>
-                  <Button
-                    disabled={activeStep === 0}
-                    onClick={handleBack}
-                    sx={{ mt: 1 }}
-                  >
-                    Back
-                  </Button>
-                </Box>
-              </Box>
-            </StepContent>
-          </Step>
-        ))}
-      </Stepper>
-
-      {activeStep === steps.length && (
-        <Paper square elevation={0} sx={{ p: 3 }}>
-          <Typography>🎉 All steps completed — you're done!</Typography>
-          <Button onClick={handleReset} sx={{ mt: 2 }}>Reset</Button>
-        </Paper>
-      )}
-    </Box>
+    <StepIconRoot className={clsx(className, { active, completed })}>
+      {completed ? <CheckIcon /> : icons[icon]}
+    </StepIconRoot>
   );
 }
