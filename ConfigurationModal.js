@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Tabs, Tab, TextField, Button, Box, MenuItem, Typography
+  Tabs, Tab, TextField, Button, Box, MenuItem, Typography, IconButton
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const attributeTypes = ['source', 'derived'];
 
@@ -10,7 +11,6 @@ function ConfigurationModal({ open, onClose }) {
   const [tabIndex, setTabIndex] = useState(0);
   const [defaultAttrs, setDefaultAttrs] = useState([]);
   const [customGroups, setCustomGroups] = useState([]);
-
   const [newAttr, setNewAttr] = useState({ name: '', type: 'source', formula: '' });
   const [newGroup, setNewGroup] = useState({ name: '', attributes: [] });
 
@@ -36,6 +36,24 @@ function ConfigurationModal({ open, onClose }) {
     setNewGroup({ name: '', attributes: [] });
   };
 
+  const addAttributeToGroup = (groupIndex, attr) => {
+    const updatedGroups = [...customGroups];
+    updatedGroups[groupIndex].attributes.push(attr);
+    setCustomGroups(updatedGroups);
+  };
+
+  const updateAttributeInGroup = (groupIndex, attrIndex, field, value) => {
+    const updatedGroups = [...customGroups];
+    updatedGroups[groupIndex].attributes[attrIndex][field] = value;
+    setCustomGroups(updatedGroups);
+  };
+
+  const deleteAttributeFromGroup = (groupIndex, attrIndex) => {
+    const updatedGroups = [...customGroups];
+    updatedGroups[groupIndex].attributes.splice(attrIndex, 1);
+    setCustomGroups(updatedGroups);
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>🛠️ Configure Attributes</DialogTitle>
@@ -46,7 +64,7 @@ function ConfigurationModal({ open, onClose }) {
           <Tab label="Custom Groups" />
         </Tabs>
 
-        {/* --- Default Tab --- */}
+        {/* ----- Default Tab ----- */}
         {tabIndex === 0 && (
           <Box mt={2}>
             <TextField
@@ -57,7 +75,6 @@ function ConfigurationModal({ open, onClose }) {
               fullWidth
               sx={{ mb: 2 }}
             />
-
             <TextField
               select
               label="Type"
@@ -71,7 +88,6 @@ function ConfigurationModal({ open, onClose }) {
                 <MenuItem key={type} value={type}>{type}</MenuItem>
               ))}
             </TextField>
-
             {newAttr.type === 'derived' && (
               <TextField
                 label="Formula"
@@ -82,9 +98,7 @@ function ConfigurationModal({ open, onClose }) {
                 sx={{ mb: 2 }}
               />
             )}
-
             <Button variant="contained" onClick={addDefaultAttr}>➕ Add Attribute</Button>
-
             {defaultAttrs.length > 0 && (
               <Box mt={3}>
                 <Typography variant="h6">🧩 Added Attributes</Typography>
@@ -100,32 +114,70 @@ function ConfigurationModal({ open, onClose }) {
           </Box>
         )}
 
-        {/* --- Custom Tab --- */}
+        {/* ----- Custom Tab ----- */}
         {tabIndex === 1 && (
           <Box mt={2}>
-            <TextField
-              label="Group Name"
-              name="name"
-              value={newGroup.name}
-              onChange={handleGroupChange}
-              fullWidth
-              sx={{ mb: 2 }}
-            />
+            {/* New Group Input */}
+            <Box display="flex" gap={2} mb={2}>
+              <TextField
+                label="New Group Name"
+                name="name"
+                value={newGroup.name}
+                onChange={handleGroupChange}
+              />
+              <Button variant="contained" onClick={addCustomGroup}>➕ Add Group</Button>
+            </Box>
 
-            <Button variant="contained" onClick={addCustomGroup}>➕ Add Group</Button>
+            {/* Group List */}
+            {customGroups.map((group, groupIndex) => (
+              <Box key={groupIndex} mb={4} p={2} border="1px solid #ddd" borderRadius={2}>
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>📦 {group.name}</Typography>
 
-            {customGroups.length > 0 && (
-              <Box mt={3}>
-                <Typography variant="h6">📦 Custom Groups</Typography>
-                <ul>
-                  {customGroups.map((group, idx) => (
-                    <li key={idx}>
-                      {group.name} (0 attributes)
-                    </li>
-                  ))}
-                </ul>
+                {/* Add Attribute to Group */}
+                <AddGroupAttrForm onAdd={(attr) => addAttributeToGroup(groupIndex, attr)} />
+
+                {/* Attribute Table */}
+                {group.attributes.length > 0 && group.attributes.map((attr, attrIndex) => (
+                  <Box key={attrIndex} display="flex" gap={2} alignItems="center" mt={2}>
+                    <TextField
+                      label="Name"
+                      value={attr.name}
+                      onChange={(e) =>
+                        updateAttributeInGroup(groupIndex, attrIndex, 'name', e.target.value)
+                      }
+                    />
+                    <TextField
+                      select
+                      label="Type"
+                      value={attr.type}
+                      onChange={(e) =>
+                        updateAttributeInGroup(groupIndex, attrIndex, 'type', e.target.value)
+                      }
+                      sx={{ width: 120 }}
+                    >
+                      {attributeTypes.map((type) => (
+                        <MenuItem key={type} value={type}>{type}</MenuItem>
+                      ))}
+                    </TextField>
+                    {attr.type === 'derived' && (
+                      <TextField
+                        label="Formula"
+                        value={attr.formula}
+                        onChange={(e) =>
+                          updateAttributeInGroup(groupIndex, attrIndex, 'formula', e.target.value)
+                        }
+                      />
+                    )}
+                    <IconButton
+                      color="error"
+                      onClick={() => deleteAttributeFromGroup(groupIndex, attrIndex)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                ))}
               </Box>
-            )}
+            ))}
           </Box>
         )}
       </DialogContent>
@@ -133,13 +185,61 @@ function ConfigurationModal({ open, onClose }) {
       <DialogActions>
         <Button onClick={onClose}>❌ Cancel</Button>
         <Button variant="contained" onClick={() => {
-          console.log('📝 Default:', defaultAttrs);
-          console.log('📦 Custom:', customGroups);
+          console.log('📝 Default Attributes:', defaultAttrs);
+          console.log('📦 Custom Groups:', customGroups);
           onClose();
         }}>💾 Save All</Button>
       </DialogActions>
     </Dialog>
   );
 }
+
+// Reusable form for adding attribute to a group
+const AddGroupAttrForm = ({ onAdd }) => {
+  const [attr, setAttr] = useState({ name: '', type: 'source', formula: '' });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setAttr((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAdd = () => {
+    if (!attr.name || !attr.type) return;
+    onAdd(attr);
+    setAttr({ name: '', type: 'source', formula: '' });
+  };
+
+  return (
+    <Box display="flex" gap={2}>
+      <TextField
+        label="Attr Name"
+        name="name"
+        value={attr.name}
+        onChange={handleChange}
+      />
+      <TextField
+        select
+        label="Type"
+        name="type"
+        value={attr.type}
+        onChange={handleChange}
+        sx={{ width: 120 }}
+      >
+        {attributeTypes.map((type) => (
+          <MenuItem key={type} value={type}>{type}</MenuItem>
+        ))}
+      </TextField>
+      {attr.type === 'derived' && (
+        <TextField
+          label="Formula"
+          name="formula"
+          value={attr.formula}
+          onChange={handleChange}
+        />
+      )}
+      <Button variant="outlined" onClick={handleAdd}>➕</Button>
+    </Box>
+  );
+};
 
 export default ConfigurationModal;
