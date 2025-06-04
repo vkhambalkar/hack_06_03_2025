@@ -1,245 +1,82 @@
 import React, { useState } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Tabs, Tab, TextField, Button, Box, MenuItem, Typography, IconButton
+  Stepper,
+  Step,
+  StepLabel,
+  StepContent,
+  Button,
+  Paper,
+  Typography,
+  Box
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
 
-const attributeTypes = ['source', 'derived'];
+import Step1 from './steps/Step1_DataCollection';
+import Step2 from './steps/Step2_DataExtraction';
+import Step3 from './steps/Step3_CommentaryAnalysis';
+import Step4 from './steps/Step4_ReportingPresentation';
 
-function ConfigurationModal({ open, onClose }) {
-  const [tabIndex, setTabIndex] = useState(0);
-  const [defaultAttrs, setDefaultAttrs] = useState([]);
-  const [customGroups, setCustomGroups] = useState([]);
-  const [newAttr, setNewAttr] = useState({ name: '', type: 'source', formula: '' });
-  const [newGroup, setNewGroup] = useState({ name: '', attributes: [] });
+const steps = [
+  { label: 'Data Collection', content: <Step1 /> },
+  { label: 'Data Extraction', content: <Step2 /> },
+  { label: 'Commentary Analysis', content: <Step3 /> },
+  { label: 'Reporting & Presentation', content: <Step4 /> }
+];
 
-  const handleAttrChange = (e) => {
-    const { name, value } = e.target;
-    setNewAttr((prev) => ({ ...prev, [name]: value }));
+export default function VerticalStepper() {
+  const [activeStep, setActiveStep] = useState(0);
+
+  const handleNext = () => {
+    setActiveStep((prev) => prev + 1);
   };
 
-  const handleGroupChange = (e) => {
-    const { name, value } = e.target;
-    setNewGroup((prev) => ({ ...prev, [name]: value }));
+  const handleBack = () => {
+    setActiveStep((prev) => prev - 1);
   };
 
-  const addDefaultAttr = () => {
-    if (!newAttr.name || !newAttr.type) return;
-    setDefaultAttrs((prev) => [...prev, newAttr]);
-    setNewAttr({ name: '', type: 'source', formula: '' });
-  };
-
-  const addCustomGroup = () => {
-    if (!newGroup.name) return;
-    setCustomGroups((prev) => [...prev, { ...newGroup, attributes: [] }]);
-    setNewGroup({ name: '', attributes: [] });
-  };
-
-  const addAttributeToGroup = (groupIndex, attr) => {
-    const updatedGroups = [...customGroups];
-    updatedGroups[groupIndex].attributes.push(attr);
-    setCustomGroups(updatedGroups);
-  };
-
-  const updateAttributeInGroup = (groupIndex, attrIndex, field, value) => {
-    const updatedGroups = [...customGroups];
-    updatedGroups[groupIndex].attributes[attrIndex][field] = value;
-    setCustomGroups(updatedGroups);
-  };
-
-  const deleteAttributeFromGroup = (groupIndex, attrIndex) => {
-    const updatedGroups = [...customGroups];
-    updatedGroups[groupIndex].attributes.splice(attrIndex, 1);
-    setCustomGroups(updatedGroups);
+  const handleReset = () => {
+    setActiveStep(0);
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>🛠️ Configure Attributes</DialogTitle>
-
-      <DialogContent>
-        <Tabs value={tabIndex} onChange={(e, val) => setTabIndex(val)}>
-          <Tab label="Default Attributes" />
-          <Tab label="Custom Groups" />
-        </Tabs>
-
-        {/* ----- Default Tab ----- */}
-        {tabIndex === 0 && (
-          <Box mt={2}>
-            <TextField
-              label="Attribute Name"
-              name="name"
-              value={newAttr.name}
-              onChange={handleAttrChange}
-              fullWidth
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              select
-              label="Type"
-              name="type"
-              value={newAttr.type}
-              onChange={handleAttrChange}
-              fullWidth
-              sx={{ mb: 2 }}
-            >
-              {attributeTypes.map((type) => (
-                <MenuItem key={type} value={type}>{type}</MenuItem>
-              ))}
-            </TextField>
-            {newAttr.type === 'derived' && (
-              <TextField
-                label="Formula"
-                name="formula"
-                value={newAttr.formula}
-                onChange={handleAttrChange}
-                fullWidth
-                sx={{ mb: 2 }}
-              />
-            )}
-            <Button variant="contained" onClick={addDefaultAttr}>➕ Add Attribute</Button>
-            {defaultAttrs.length > 0 && (
-              <Box mt={3}>
-                <Typography variant="h6">🧩 Added Attributes</Typography>
-                <ul>
-                  {defaultAttrs.map((attr, idx) => (
-                    <li key={idx}>
-                      {attr.name} ({attr.type}) {attr.type === 'derived' && `= ${attr.formula}`}
-                    </li>
-                  ))}
-                </ul>
+    <Box sx={{ maxWidth: 600 }}>
+      <Stepper activeStep={activeStep} orientation="vertical">
+        {steps.map((step, index) => (
+          <Step key={step.label}>
+            <StepLabel>
+              <Typography fontWeight={600}>{step.label}</Typography>
+            </StepLabel>
+            <StepContent>
+              <Box sx={{ mb: 2 }}>
+                {step.content}
+                <Box sx={{ mt: 2 }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleNext}
+                    sx={{ mt: 1, mr: 1 }}
+                    disabled={activeStep === steps.length - 1}
+                  >
+                    {index === steps.length - 1 ? 'Finish' : 'Next'}
+                  </Button>
+                  <Button
+                    disabled={activeStep === 0}
+                    onClick={handleBack}
+                    sx={{ mt: 1 }}
+                  >
+                    Back
+                  </Button>
+                </Box>
               </Box>
-            )}
-          </Box>
-        )}
-
-        {/* ----- Custom Tab ----- */}
-        {tabIndex === 1 && (
-          <Box mt={2}>
-            {/* New Group Input */}
-            <Box display="flex" gap={2} mb={2}>
-              <TextField
-                label="New Group Name"
-                name="name"
-                value={newGroup.name}
-                onChange={handleGroupChange}
-              />
-              <Button variant="contained" onClick={addCustomGroup}>➕ Add Group</Button>
-            </Box>
-
-            {/* Group List */}
-            {customGroups.map((group, groupIndex) => (
-              <Box key={groupIndex} mb={4} p={2} border="1px solid #ddd" borderRadius={2}>
-                <Typography variant="subtitle1" sx={{ mb: 1 }}>📦 {group.name}</Typography>
-
-                {/* Add Attribute to Group */}
-                <AddGroupAttrForm onAdd={(attr) => addAttributeToGroup(groupIndex, attr)} />
-
-                {/* Attribute Table */}
-                {group.attributes.length > 0 && group.attributes.map((attr, attrIndex) => (
-                  <Box key={attrIndex} display="flex" gap={2} alignItems="center" mt={2}>
-                    <TextField
-                      label="Name"
-                      value={attr.name}
-                      onChange={(e) =>
-                        updateAttributeInGroup(groupIndex, attrIndex, 'name', e.target.value)
-                      }
-                    />
-                    <TextField
-                      select
-                      label="Type"
-                      value={attr.type}
-                      onChange={(e) =>
-                        updateAttributeInGroup(groupIndex, attrIndex, 'type', e.target.value)
-                      }
-                      sx={{ width: 120 }}
-                    >
-                      {attributeTypes.map((type) => (
-                        <MenuItem key={type} value={type}>{type}</MenuItem>
-                      ))}
-                    </TextField>
-                    {attr.type === 'derived' && (
-                      <TextField
-                        label="Formula"
-                        value={attr.formula}
-                        onChange={(e) =>
-                          updateAttributeInGroup(groupIndex, attrIndex, 'formula', e.target.value)
-                        }
-                      />
-                    )}
-                    <IconButton
-                      color="error"
-                      onClick={() => deleteAttributeFromGroup(groupIndex, attrIndex)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                ))}
-              </Box>
-            ))}
-          </Box>
-        )}
-      </DialogContent>
-
-      <DialogActions>
-        <Button onClick={onClose}>❌ Cancel</Button>
-        <Button variant="contained" onClick={() => {
-          console.log('📝 Default Attributes:', defaultAttrs);
-          console.log('📦 Custom Groups:', customGroups);
-          onClose();
-        }}>💾 Save All</Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-// Reusable form for adding attribute to a group
-const AddGroupAttrForm = ({ onAdd }) => {
-  const [attr, setAttr] = useState({ name: '', type: 'source', formula: '' });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setAttr((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleAdd = () => {
-    if (!attr.name || !attr.type) return;
-    onAdd(attr);
-    setAttr({ name: '', type: 'source', formula: '' });
-  };
-
-  return (
-    <Box display="flex" gap={2}>
-      <TextField
-        label="Attr Name"
-        name="name"
-        value={attr.name}
-        onChange={handleChange}
-      />
-      <TextField
-        select
-        label="Type"
-        name="type"
-        value={attr.type}
-        onChange={handleChange}
-        sx={{ width: 120 }}
-      >
-        {attributeTypes.map((type) => (
-          <MenuItem key={type} value={type}>{type}</MenuItem>
+            </StepContent>
+          </Step>
         ))}
-      </TextField>
-      {attr.type === 'derived' && (
-        <TextField
-          label="Formula"
-          name="formula"
-          value={attr.formula}
-          onChange={handleChange}
-        />
+      </Stepper>
+
+      {activeStep === steps.length && (
+        <Paper square elevation={0} sx={{ p: 3 }}>
+          <Typography>🎉 All steps completed — you're done!</Typography>
+          <Button onClick={handleReset} sx={{ mt: 2 }}>Reset</Button>
+        </Paper>
       )}
-      <Button variant="outlined" onClick={handleAdd}>➕</Button>
     </Box>
   );
-};
-
-export default ConfigurationModal;
+}
